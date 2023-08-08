@@ -1,5 +1,12 @@
 pub mod types;
 
+use std::sync::Arc;
+
+use ethers::{providers::{Middleware, PendingTransaction, JsonRpcClient}, prelude::{signer::SignerMiddlewareError, k256::ecdsa::SigningKey}, signers::Wallet, types::TransactionReceipt};
+
+use crate::types::{TxErrors, TxStatus};
+
+
 pub struct ClientWrapper<M> {
     pub client: Arc<M>,
 }
