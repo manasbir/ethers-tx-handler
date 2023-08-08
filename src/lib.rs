@@ -17,6 +17,9 @@ pub struct ClientWrapper<M> {
 }
 
 impl<M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
+    pub fn new(client: Arc<M>) -> Self {
+        Self { client }
+    }
     /// Handles the transaction and returns a TxStatus
     pub async fn handle_tx(
         &self,
