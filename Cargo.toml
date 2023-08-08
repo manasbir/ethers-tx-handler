@@ -1,6 +1,6 @@
 [package]
 name = "ethers-tx-handler"
-version = "0.1.102"
+version = "0.1.103"
 edition = "2021"
 license = "MIT"
 description = "A simple transaction handler for ethers-rs"
