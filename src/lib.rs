@@ -3,9 +3,9 @@ pub mod types;
 use std::sync::Arc;
 
 use ethers::{
-    prelude::{k256::ecdsa::SigningKey, signer::SignerMiddlewareError},
+    prelude::signer::SignerMiddlewareError,
     providers::{JsonRpcClient, Middleware, PendingTransaction},
-    signers::Wallet,
+    signers::Signer,
 };
 use tracing::{error, info};
 
@@ -16,14 +16,17 @@ pub struct ClientWrapper<M> {
     pub client: Arc<M>,
 }
 
-impl<M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
+impl<M> ClientWrapper<M>
+where
+    M: Middleware + 'static,
+{
     pub fn new(client: Arc<M>) -> Self {
         Self { client }
     }
     /// Handles the transaction and returns a TxStatus
-    pub async fn handle_tx(
+    pub async fn handle_tx<P: JsonRpcClient, S: Signer>(
         &self,
-        tx: Result<PendingTransaction<'_, M>, SignerMiddlewareError<M, Wallet<SigningKey>>>,
+        tx: Result<PendingTransaction<'_, P>, SignerMiddlewareError<impl Middleware, S>>,
     ) -> TxStatus {
         let tx = tx.map_err(|e| format!("Failed to send transaction: {:?}", e));
 
@@ -60,5 +63,42 @@ impl<M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
                 TxStatus::Failed(TxErrors::NoReceipt(hash))
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use ethers::{
+        prelude::SignerMiddleware,
+        signers::{LocalWallet, Signer},
+        types::TransactionRequest,
+        utils::{parse_ether, Anvil},
+    };
+
+    #[tokio::test]
+    async fn it_works() {
+        use ethers::providers::{Http, Middleware, Provider};
+        use std::sync::Arc;
+
+        let anvil = Anvil::new().spawn();
+        let signer: LocalWallet = anvil.keys()[0].clone().into();
+        let provider = Provider::<Http>::try_from(anvil.endpoint()).unwrap();
+
+        let client = SignerMiddleware::new(provider.clone(), signer.with_chain_id(31337u64));
+        let client = Arc::new(client);
+
+        let tx = TransactionRequest::pay(anvil.addresses()[0], 100);
+
+        let wrapped_client = super::ClientWrapper::new(Arc::new(client.clone()));
+
+        let tx = client.send_transaction(tx, None).await;
+        let status = wrapped_client.handle_tx(tx).await;
+        println!("{:?}", status);
+
+        let tx_2 = TransactionRequest::pay(anvil.addresses()[1], parse_ether("10000000").unwrap());
+        let tx = client.send_transaction(tx_2, None).await;
+
+        let status = wrapped_client.handle_tx(tx).await;
+        println!("{:?}", status);
     }
 }
