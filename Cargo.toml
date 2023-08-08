@@ -7,7 +7,6 @@ description = "A simple transaction handler for ethers-rs"
 repository = "https://github.com/manasbir/ethers-tx-handler/"
 readme = "README.md"
 keywords = ["ethers", "ethereum", "transaction"]
-categories = ["blockchain", "cryptography"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
