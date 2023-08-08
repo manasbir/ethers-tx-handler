@@ -9,7 +9,6 @@ use tracing::{error, info};
 
 use crate::types::{TxErrors, TxStatus};
 
-
 /// Handles the transaction and returns a TxStatus
 pub async fn handle_tx<P: JsonRpcClient, S: Signer>(
     tx: Result<PendingTransaction<'_, P>, SignerMiddlewareError<impl Middleware, S>>,
@@ -51,7 +50,6 @@ pub async fn handle_tx<P: JsonRpcClient, S: Signer>(
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use ethers::{
@@ -76,7 +74,6 @@ mod tests {
         let client = Arc::new(client);
 
         let tx = TransactionRequest::pay(anvil.addresses()[0], 100);
-
 
         let tx = client.send_transaction(tx, None).await;
         let status = handle_tx(tx).await;
