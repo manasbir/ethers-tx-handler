@@ -3,6 +3,7 @@ pub mod types;
 use std::sync::Arc;
 
 use ethers::{providers::{Middleware, PendingTransaction, JsonRpcClient}, prelude::{signer::SignerMiddlewareError, k256::ecdsa::SigningKey}, signers::Wallet};
+use tracing::{info, error};
 
 use crate::types::{TxErrors, TxStatus};
 
@@ -18,13 +19,15 @@ impl <M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
 
         let tx = match tx {
             Ok(tx) => tx,
-            Err(e) => return TxStatus::Failed(TxErrors::Failed(e)),
+            Err(e) => {
+                error!("Failed to send transaction: {:?}", e);
+                return TxStatus::Failed(TxErrors::Failed(e))
+            },
         };
     
         let hash = tx.tx_hash();
     
-        println!("Sent tx hash: {:?}", hash);
-        println!("Mining...");
+        info!("Mining tx hash: {:?}", hash);
         let receipt = tx
             .await
             .map_err(|e| format!("Failed to mine transaction: {:?}", e));
@@ -34,13 +37,15 @@ impl <M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
         };
         match receipt {
             Some(receipt) => {
-                println!("Tx mined!");
+                info!("Tx mined!");
                 if receipt.status == Some(0.into()) {
+                    info!("Tx reverted!");
                     return types::TxStatus::Failed(TxErrors::Reverted(receipt));
                 }
                 TxStatus::Successful(receipt)
             }
             None => {
+                error!("No receipt for tx hash: {:?}", hash);
                 // I don't even think this is possible
                 TxStatus::Failed(TxErrors::NoReceipt(hash))
             }
