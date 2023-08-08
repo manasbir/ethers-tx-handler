@@ -2,8 +2,12 @@ pub mod types;
 
 use std::sync::Arc;
 
-use ethers::{providers::{Middleware, PendingTransaction, JsonRpcClient}, prelude::{signer::SignerMiddlewareError, k256::ecdsa::SigningKey}, signers::Wallet};
-use tracing::{info, error};
+use ethers::{
+    prelude::{k256::ecdsa::SigningKey, signer::SignerMiddlewareError},
+    providers::{JsonRpcClient, Middleware, PendingTransaction},
+    signers::Wallet,
+};
+use tracing::{error, info};
 
 use crate::types::{TxErrors, TxStatus};
 
@@ -12,21 +16,24 @@ pub struct ClientWrapper<M> {
     pub client: Arc<M>,
 }
 
-impl <M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
+impl<M: Middleware + 'static + JsonRpcClient> ClientWrapper<M> {
     /// Handles the transaction and returns a TxStatus
-    pub async fn handle_tx(&self, tx: Result<PendingTransaction<'_, M>, SignerMiddlewareError<M, Wallet<SigningKey>>,>) -> TxStatus {
+    pub async fn handle_tx(
+        &self,
+        tx: Result<PendingTransaction<'_, M>, SignerMiddlewareError<M, Wallet<SigningKey>>>,
+    ) -> TxStatus {
         let tx = tx.map_err(|e| format!("Failed to send transaction: {:?}", e));
 
         let tx = match tx {
             Ok(tx) => tx,
             Err(e) => {
                 error!("Failed to send transaction: {:?}", e);
-                return TxStatus::Failed(TxErrors::Failed(e))
-            },
+                return TxStatus::Failed(TxErrors::Failed(e));
+            }
         };
-    
+
         let hash = tx.tx_hash();
-    
+
         info!("Mining tx hash: {:?}", hash);
         let receipt = tx
             .await

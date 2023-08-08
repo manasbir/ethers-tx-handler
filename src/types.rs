@@ -1,8 +1,7 @@
-use ethers::types::{H256, TransactionReceipt};
+use ethers::types::{TransactionReceipt, H256};
 use serde::Serialize;
 
 // minimal types since they are pretty case specific
-
 
 /// enum for success and failure
 #[derive(Debug, Serialize, Clone)]
