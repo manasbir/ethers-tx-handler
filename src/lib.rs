@@ -1,17 +1,15 @@
 pub mod types;
 
-use ethers::{
-    prelude::signer::SignerMiddlewareError,
-    providers::{JsonRpcClient, Middleware, PendingTransaction},
-    signers::Signer,
-};
+use std::error::Error;
+
+use ethers::providers::{JsonRpcClient, PendingTransaction};
 use tracing::{error, info};
 
 use crate::types::{TxErrors, TxStatus};
 
 /// Handles the transaction and returns a TxStatus
-pub async fn handle_tx<P: JsonRpcClient, S: Signer>(
-    tx: Result<PendingTransaction<'_, P>, SignerMiddlewareError<impl Middleware, S>>,
+pub async fn handle_tx<P: JsonRpcClient, E: Error>(
+    tx: Result<PendingTransaction<'_, P>, E>,
 ) -> TxStatus {
     let tx = tx.map_err(|e| format!("Failed to send transaction: {:?}", e));
 
